@@ -1,4 +1,5 @@
 /**
+ /**
  * Sample Skeleton for 'Scene.fxml' Controller Class
  */
 
@@ -8,6 +9,7 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import it.polito.tdp.PremierLeague.model.Model;
+import it.polito.tdp.PremierLeague.model.Team;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -35,7 +37,7 @@ public class FXMLController {
     private Button btnSimula; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbSquadra"
-    private ComboBox<?> cmbSquadra; // Value injected by FXMLLoader
+    private ComboBox<Team> cmbSquadra; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtN"
     private TextField txtN; // Value injected by FXMLLoader
@@ -49,15 +51,51 @@ public class FXMLController {
     @FXML
     void doClassifica(ActionEvent event) {
 
+    	this.txtResult.clear();
+    	Team team = this.cmbSquadra.getValue();
+    	if (team==null) {
+    		this.txtResult.setText("Selezionare un team per visualizzare le squadre migliori e peggiori\n");
+    		return;
+    	}
+    	this.txtResult.setText(model.getClassificaSquadra(team));
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
 
+    	this.txtResult.clear();
+    	String result = model.creaGrafo();
+    	this.txtResult.setText(result);
+    	
+    	this.btnClassifica.setDisable(false);
+    	this.btnSimula.setDisable(false);
+    	this.cmbSquadra.getItems().clear();
+    	this.cmbSquadra.getItems().addAll(model.getAllTeams());
     }
 
     @FXML
     void doSimula(ActionEvent event) {
+    	
+    	this.txtResult.clear();
+    	
+    	
+    	try {
+    	Integer N = Integer.parseInt(this.txtN.getText());
+    	Integer soglia =  Integer.parseInt(this.txtX.getText());
+    	
+    	if(N == null || soglia == null) {
+    		this.txtResult.appendText("Inserisci un numero di reporter e una soglia!");
+    		return;
+    	}
+    	else {
+    	this.txtResult.appendText(this.model.doSimulazione(N, soglia));
+    	}
+    	
+    	} catch (NumberFormatException e) {
+    		this.txtResult.appendText("Inserisci un formato numerico valido!");
+    		return;
+    	}
+    	
 
     }
 
@@ -70,6 +108,9 @@ public class FXMLController {
         assert txtN != null : "fx:id=\"txtN\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtX != null : "fx:id=\"txtX\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtResult != null : "fx:id=\"txtResult\" was not injected: check your FXML file 'Scene.fxml'.";
+        
+        this.btnClassifica.setDisable(true);
+        this.btnSimula.setDisable(true);
     }
     
     public void setModel(Model model) {

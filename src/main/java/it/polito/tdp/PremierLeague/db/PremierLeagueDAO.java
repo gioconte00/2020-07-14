@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.PremierLeague.model.Action;
 import it.polito.tdp.PremierLeague.model.Match;
 import it.polito.tdp.PremierLeague.model.Player;
@@ -36,9 +39,8 @@ public class PremierLeagueDAO {
 		}
 	}
 	
-	public List<Team> listAllTeams(){
+	public void listAllTeams(Map<Integer, Team> idMap){
 		String sql = "SELECT * FROM Teams";
-		List<Team> result = new ArrayList<Team>();
 		Connection conn = DBConnect.getConnection();
 
 		try {
@@ -47,14 +49,12 @@ public class PremierLeagueDAO {
 			while (res.next()) {
 
 				Team team = new Team(res.getInt("TeamID"), res.getString("Name"));
-				result.add(team);
+				idMap.put(team.getTeamID(), team);
 			}
 			conn.close();
-			return result;
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
 		}
 	}
 	
@@ -112,4 +112,38 @@ public class PremierLeagueDAO {
 		}
 	}
 	
+	public Map<Team, Integer> getClassifica(Map<Integer, Team> idMap) {
+		String sql = "SELECT t1.TeamHomeID AS team, (t1.punti_home+t2.punti_home+t3.punti_away+t4.punti_away) AS punti "
+				+ "FROM (SELECT TeamHomeID, COUNT(ResultOfTeamHome)*3 AS punti_home "
+				+ "FROM matches "
+				+ "WHERE ResultOfTeamHome=1 "
+				+ "GROUP BY TeamHomeID) AS t1,(SELECT TeamHomeID, COUNT(ResultOfTeamHome) AS punti_home "
+				+ "FROM matches "
+				+ "WHERE ResultOfTeamHome=0 "
+				+ "GROUP BY TeamHomeID) AS t2, (SELECT TeamAwayID, COUNT(ResultOfTeamHome)*3 AS punti_away "
+				+ "FROM matches "
+				+ "WHERE ResultOfTeamHome=-1 "
+				+ "GROUP BY TeamAwayID) AS t3, (SELECT TeamAwayID, COUNT(ResultOfTeamHome) AS punti_away "
+				+ "FROM matches "
+				+ "WHERE ResultOfTeamHome=0 "
+				+ "GROUP BY TeamAwayID) AS t4 "
+				+ "WHERE t1.TeamHomeID=t2.TeamHomeID AND t2.TeamHomeID=t3.TeamAwayID AND t3.TeamAwayID=t4.TeamAwayID";
+		Map<Team, Integer> result = new HashMap<>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				result.put(idMap.get(res.getInt("team")), res.getInt("punti"));
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }
